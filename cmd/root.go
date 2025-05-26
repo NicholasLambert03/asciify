@@ -37,18 +37,32 @@ func resize(img image.Image, width int) image.Image {
 
 }
 
+func validateArguments(cmd *cobra.Command, args []string) error {
+	if len(args) == 0 {
+		fmt.Println("Warning: No filepath provided, defaulted to showing help message.")
+		cmd.Help()
+		os.Exit(1)
+	}
+	if len(args) > 1 {
+		return fmt.Errorf("too many arguments provided, expected 1 but got %d", len(args))
+	}
+	// Check if the file exists
+	if _, err := os.Stat(args[0]); os.IsNotExist(err) {
+		return fmt.Errorf("file does not exist: %s", args[0])
+	}
+	return nil
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "asciify [filepath]",
 	Short: "A simple CLI tool to convert images to ASCII art",
 	Long:  `Asciify is a command-line tool that converts images into ASCII art.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  validateArguments,
 	Run: func(cmd *cobra.Command, args []string) {
+		widthFlag, _ := cmd.Flags().GetInt("width") // Get the width from the command line flag
 		//Variable Declarations
 		var filepath string = args[0] // Get the file path from the command line argument
-		if _, err := os.Stat(filepath); os.IsNotExist(err) {
-			log.Fatalf("File does not exist: %s", filepath)
-		}
 		var imageFile *os.File
 		var err error
 		var img image.Image
@@ -74,8 +88,9 @@ var rootCmd = &cobra.Command{
 			log.Fatal(err)
 
 		}
-
-		//img = resize(img, 20)
+		if widthFlag > 0 { // If the width flag is set, resize the image
+			img = resize(img, widthFlag)
+		}
 
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
 			for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
@@ -101,13 +116,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.asciify.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().IntP("width", "w", 0, "Custom width of the output ASCII art in characters")
 }
