@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
 	"math"
 	"os"
 
@@ -51,13 +51,15 @@ func validateArguments(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("file does not exist: %s", args[0])
 	}
 	return nil
+
+	//Filetype checked in the image.Decode function for
 }
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "asciify [filepath]",
 	Short: "A simple CLI tool to convert images to ASCII art",
-	Long:  `Asciify is a command-line tool that converts images into ASCII art.`,
+	Long:  `Asciify is a command-line tool that converts .png .jpeg or .gif into ASCII art.`,
 	Args:  validateArguments,
 	Run: func(cmd *cobra.Command, args []string) {
 		widthFlag, _ := cmd.Flags().GetInt("width") // Get the width from the command line flag
@@ -78,14 +80,17 @@ var rootCmd = &cobra.Command{
 
 		imageFile, err = os.Open(filepath) // := is shorthand for regular variable declaration
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Println("Error opening file:", err)
+			os.Exit(1)
+
 		}
 		defer imageFile.Close() // defer runs when main returns
 
 		// Decode PNG
 		img, _, err = image.Decode(imageFile)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println("Error decoding image:", err)
+			os.Exit(1)
 
 		}
 		if widthFlag > 0 { // If the width flag is set, resize the image
